@@ -1,4 +1,4 @@
-/* Filename: otp_enc_d.c
+/* Filename: otp_dec_d.c
  * Author: Andrew Weckwerth (built off example code server2.c)
  * Date Modified: 2015-12-05
  *
@@ -42,17 +42,17 @@ static void grimReaper(int sig) {
  for each connection.  It handles all communication
  once a connnection has been established.
  *****************************************/
-void encryptFxn(int sock) {
+void decryptFxn(int sock) {
 
     //initialize vars
     int numRead, numWrite, totalKey = 0, totalText = 0;
     int toKey = 1;
     char inBuffer[1000];
     int *keyHolder = malloc(sizeof(int) * 70000);
-    int *plaintextHolder = malloc(sizeof(int) * 70000);
+    int *ciphertextHolder = malloc(sizeof(int) * 70000);
     int c, i;
     //arrays to hold both key and plaintext input
-    char *ciphertextHolder;
+    char *plaintextHolder;
 
 
     //read from socket
@@ -108,44 +108,42 @@ void encryptFxn(int sock) {
                 else{
                     c = inBuffer[i] - 'A';
                 }
-                plaintextHolder[totalText] = c;
+                ciphertextHolder[totalText] = c;
                 totalText++;
             }
         }
     }
-    ciphertextHolder = malloc((sizeof(char *) * totalText) + 2);
+    plaintextHolder = malloc((sizeof(char *) * totalText) + 2);
 
-    //encrypt
+    //decrypt
     if(totalKey < totalText) {
         error("ERROR: key must as long as input file");
     }
     for(i = 0; i < totalText; i++) {
         int k = keyHolder[i];
-        int p = plaintextHolder[i];
+        int c = ciphertextHolder[i];
 
-        //add key and plaintext and take mod 26
-        k += p;
-        k = (k % 26);
+        //subtract key and plaintext and take mod 26
+        c -= k;
+        c = (c % 26);
 
-        if(k == 26) {
-            ciphertextHolder[i] = ' ';
+        if(c == 26) {
+            plaintextHolder[i] = ' ';
         }
         else {
-            char cipher = k + 'A';
-            ciphertextHolder[i] = cipher;
+            char plain = c + 'A';
+            plaintextHolder[i] = plain;
         }
     }
     //terminate string with newline and null char
-    ciphertextHolder[totalText] = '\n';
-    ciphertextHolder[totalText + 1] = '\0';
+    plaintextHolder[totalText] = '\n';
+    plaintextHolder[totalText + 1] = '\0';
 
 
-    //while ((numWrite = write(sock, ciphertextHolder,strlen(ciphertextHolder)) > 0 ) {
-    numWrite = write(sock, ciphertextHolder,strlen(ciphertextHolder));
+    numWrite = write(sock, plaintextHolder,strlen(plaintextHolder));
         if (numWrite < 0) {
             error("ERROR writing to socket");
         }
-    //}
 }
 
 int main(int argc, char *argv[])
@@ -204,7 +202,7 @@ int main(int argc, char *argv[])
             close(sockfd);
             fcntl(newsockfd, F_SETFL, O_NONBLOCK);
             //call function for child process
-            encryptFxn(newsockfd);
+            decryptFxn(newsockfd);
             exit(0);
         }
         //parent process doesn't need new socket connection

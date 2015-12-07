@@ -1,9 +1,9 @@
-/* Filename: otp_enc.c
+/* Filename: otp_dec.c
  * Author: Andrew Weckwerth (built off base code client.c, provided on class
  * page)
  * Date Modified: 2015-12-05
- * Purpose: Program connects to encoding "daemon" and requests a one-time-pad
- * style encryption.
+ * Purpose: Program connects to decoding "daemon" and requests a one-time-pad
+ * style decryption.
  * -should raise error if key or plaintext file has bad characters
  * -should raise error if key is too short
  * -any error should set exit value to 1
