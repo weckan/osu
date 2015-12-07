@@ -17,6 +17,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include "dynamicArray.h"
 
 void error(const char *msg)
 {
@@ -26,14 +27,40 @@ void error(const char *msg)
 
 //Function to open and copy input plaintext file to buffer, checking that all
 //chars are appropriate and that the file exists. Returns pointer to buffer.
-char *get_plaintext(char *filename) {
+void get_text(char *fileText, char *filename) {
 
+    //open file, raise error if nonexistent
+    FILE *f = fopen(filename, "r");
+    if(f == NULL) {
+        error("File open error");
+    }
+
+    char c;
+    int numRead = 0;
+    //read in vars
+    while((c = fgetc(f)) != EOF) {
+        //verify good characters
+        if(((c - 'A') >= 0 && (c - 'A') <= 25)){
+            fileText[numRead] = c;
+        }
+        else if((c == ' ') || (c == '\n')){
+            fileText[numRead] = c;
+        }
+        else {
+            error("Bad character in file");
+        }
+        numRead++;
+    }
+    //null-terminate string
+    fileText[numRead] = '\0';
+
+    fclose(f);
 }
 
 int main(int argc, char *argv[])
 {
     //initialize variables
-    int sockfd, portno, n;
+    int sockfd, portno, n, i;
     struct sockaddr_in serv_addr;
     struct hostent *server;
 
@@ -45,8 +72,12 @@ int main(int argc, char *argv[])
     }
     portno = atoi(argv[3]);
 
+    //receive and verify key
+    char *keyText = malloc(sizeof(char*) * 70000);
+    get_text(keyText, argv[2]);
     //receive and verify plaintext file
-    char *plaintext = get_plaintext(argv[1]);
+    char *fileText = malloc(sizeof(char*) * 70000);
+    get_text(fileText, argv[1]);
 
     //set up socket
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -68,17 +99,21 @@ int main(int argc, char *argv[])
         //catch connect errors
         error("ERROR connecting");
     }
-    printf("Please enter the message: ");
-    bzero(buffer,256);
-    fgets(buffer,255,stdin);
-    n = write(sockfd,buffer,strlen(buffer));
-    if (n < 0)
-         error("ERROR writing to socket");
-    bzero(buffer,256);
-    n = read(sockfd,buffer,255);
-    if (n < 0)
-         error("ERROR reading from socket");
-    printf("%s\n",buffer);
+
+    n = write(sockfd,keyText,strlen(keyText));
+        if (n < 0)
+             error("ERROR writing to socket");
+    sleep(1);
+    n = write(sockfd,fileText,strlen(fileText));
+        if (n < 0)
+             error("ERROR writing to socket");
+    while(n = read(sockfd,buffer,255) > 0) {
+        if (n < 0)
+            error("ERROR reading from socket");
+        buffer[256] = '\0';
+        printf("%s", buffer);
+        bzero(buffer,256);
+    }
     close(sockfd);
     return 0;
 }

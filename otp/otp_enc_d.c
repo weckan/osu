@@ -18,7 +18,8 @@
 #include <sys/wait.h>
 #include <syslog.h>
 #include <errno.h>
-#include "dynamicArray.h"
+#include <fcntl.h>
+//#include "dynamicArray.h"
 
 //generic error function
 void error(const char *msg)
@@ -47,26 +48,29 @@ void encryptFxn(int sock) {
     //initialize vars
     int numRead, numWrite, totalKey = 0, totalText = 0;
     int toKey = 1;
-    char inBuffer[256];
+    char inBuffer[1000];
+    int *keyHolder = malloc(sizeof(int) * 70000);
+    int *plaintextHolder = malloc(sizeof(int) * 70000);
     int c, i;
     //arrays to hold both key and plaintext input
-    DynArr *keyHolder = createDynArr(10);
-    DynArr *plaintextHolder = createDynArr(10);
     char *ciphertextHolder;
 
 
     //read from socket
-    bzero(inBuffer,256);
-    while((numRead = read(sock,inBuffer,255)) > 0) {
+    bzero(inBuffer,1000);
+    while((numRead = read(sock,inBuffer,999)) > 0 && toKey == 1) {
         if (numRead < 0){
             error("ERROR reading from socket");
         }
+        printf("received: %s.\n", inBuffer);
         for(i = 0; i < numRead; i++) {
             //check current character, at newline we should be at end of
             //file, switch destination array
             //if(strcmp(inBuffer[i], '\n') == 0) {
             if(inBuffer[i] == '\n') {
                 toKey = 0;
+                printf("done with key, i =%d\n", i);
+                break;
             }
             else {
                 //convert to int by subtracting 'A' to make A = 0
@@ -78,42 +82,66 @@ void encryptFxn(int sock) {
                 else{
                     c = inBuffer[i] - 'A';
                 }
-
-
-                //if still reading Key, add to that array
-                if(toKey == 1) {
-                    //add to last position in dynamic array
-                    addDynArr(keyHolder, &c);
-                    totalKey++;
-                }
-                //if key has already been read, add to plaintext array
-                else {
-                    addDynArr(plaintextHolder, &c);
-                    totalText++;
-                }
+                keyHolder[totalKey] = c;
+                totalKey++;
             }
         }
     }
-
+    sleep(1);
+    bzero(inBuffer,1000);
+    printf("getting first segment\n");
+    while((numRead = read(sock,inBuffer,255)) > 0) {
+    //numRead = read(sock,inBuffer,1);
+    printf("numread = %d\n", numRead);
+        printf("got first segment\n");
+        if (numRead < 0){
+            error("ERROR reading from socket");
+        }
+        for(i = 0; i < numRead; i++) {
+            //check current character, at newline we should be at end of
+            //file, switch destination array
+            if(inBuffer[i] == '\n') {
+                toKey = 1;
+                printf("done with key, i =%d\n", i);
+                break;
+            }
+            else {
+                //convert to int by subtracting 'A' to make A = 0
+                //if(strcmp(inBuffer[i], " ") == 0) {
+                if(inBuffer[i] == ' ') {
+                    // space character is hardcoded
+                    c = 26;
+                }
+                else{
+                    c = inBuffer[i] - 'A';
+                }
+                plaintextHolder[totalText] = c;
+                totalText++;
+            }
+        }
+        printf("receiving key\n");
+    }
     ciphertextHolder = malloc((sizeof(char *) * totalText) + 2);
+    printf("done reading\n");
 
     //encrypt
     if(totalKey < totalText) {
+        printf("tKey = %d\ntText= %d\n", totalKey, totalText);
         error("ERROR: key must as long as input file");
     }
     for(i = 0; i < totalText; i++) {
-        int *k = getDynArr(keyHolder, i);
-        int *p = getDynArr(plaintextHolder, i);
+        int k = keyHolder[i];
+        int p = plaintextHolder[i];
 
         //add key and plaintext and take mod 26
-        *k += *p;
-        *k = (*k % 26);
+        k += p;
+        k = (k % 26);
 
-        if(*k == 26) {
+        if(k == 26) {
             ciphertextHolder[i] = ' ';
         }
         else {
-            char cipher = *k + 'A';
+            char cipher = k + 'A';
             ciphertextHolder[i] = cipher;
         }
     }
@@ -121,11 +149,15 @@ void encryptFxn(int sock) {
     ciphertextHolder[totalText] = '\n';
     ciphertextHolder[totalText + 1] = '\0';
 
-    while ((numWrite = write(sock, ciphertextHolder,255)) > 0 ) {
+    printf("ctH = %s.\n", ciphertextHolder);
+
+    printf("writing to client\n");
+    //while ((numWrite = write(sock, ciphertextHolder,strlen(ciphertextHolder)) > 0 ) {
+    numWrite = write(sock, ciphertextHolder,strlen(ciphertextHolder));
         if (numWrite < 0) {
             error("ERROR writing to socket");
         }
-    }
+    //}
 }
 
 int main(int argc, char *argv[])
@@ -182,6 +214,7 @@ int main(int argc, char *argv[])
         if (pid == 0)  {
             //close parent's socket
             close(sockfd);
+            fcntl(newsockfd, F_SETFL, O_NONBLOCK);
             //call function for child process
             encryptFxn(newsockfd);
             exit(0);
