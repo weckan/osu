@@ -24,6 +24,12 @@ void error(const char *msg)
     exit(EXIT_FAILURE);
 }
 
+//Function to open and copy input plaintext file to buffer, checking that all
+//chars are appropriate and that the file exists. Returns pointer to buffer.
+char *get_plaintext(char *filename) {
+
+}
+
 int main(int argc, char *argv[])
 {
     //initialize variables
@@ -40,7 +46,7 @@ int main(int argc, char *argv[])
     portno = atoi(argv[3]);
 
     //receive and verify plaintext file
-
+    char *plaintext = get_plaintext(argv[1]);
 
     //set up socket
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -55,9 +61,11 @@ int main(int argc, char *argv[])
     serv_addr.sin_family = AF_INET;
     bcopy((char *)server->h_addr, (char *)&serv_addr.sin_addr.s_addr,
             server->h_length);
-
     serv_addr.sin_port = htons(portno);
+
+    //connect to socket
     if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) {
+        //catch connect errors
         error("ERROR connecting");
     }
     printf("Please enter the message: ");
