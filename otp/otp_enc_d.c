@@ -14,6 +14,10 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include <syslog.h>
+#include <errno.h>
 #include "dynamicArray.h"
 
 //generic error function
@@ -38,16 +42,17 @@ static void grimReaper(int sig) {
  for each connection.  It handles all communication
  once a connnection has been established.
  *****************************************/
-void encryptFxn(int sock, char *key) {
+void encryptFxn(int sock) {
 
+    //initialize vars
     int numRead, numWrite, totalKey = 0, totalText = 0;
     int toKey = 1;
     char inBuffer[256];
-    int c;
+    int c, i;
     //arrays to hold both key and plaintext input
     DynArr *keyHolder = createDynArr(10);
     DynArr *plaintextHolder = createDynArr(10);
-    char *ciphertextBuffer;
+    char *ciphertextHolder;
 
 
     //read from socket
@@ -59,12 +64,14 @@ void encryptFxn(int sock, char *key) {
         for(i = 0; i < numRead; i++) {
             //check current character, at newline we should be at end of
             //file, switch destination array
-            if(strcmp(inBuffer[i], '\n') == 0) {
+            //if(strcmp(inBuffer[i], '\n') == 0) {
+            if(inBuffer[i] == '\n') {
                 toKey = 0;
             }
             else {
                 //convert to int by subtracting 'A' to make A = 0
-                if(strcmp(inBuffer[i], ' ') == 0) {
+                //if(strcmp(inBuffer[i], " ") == 0) {
+                if(inBuffer[i] == ' ') {
                     // space character is hardcoded
                     c = 26;
                 }
@@ -76,37 +83,37 @@ void encryptFxn(int sock, char *key) {
                 //if still reading Key, add to that array
                 if(toKey == 1) {
                     //add to last position in dynamic array
-                    addDynArr(keyHolder, c);
+                    addDynArr(keyHolder, &c);
                     totalKey++;
                 }
                 //if key has already been read, add to plaintext array
                 else {
-                    addDynArr(plaintextHolder, c);
+                    addDynArr(plaintextHolder, &c);
                     totalText++;
                 }
             }
         }
     }
 
-    ciphertextBuffer = malloc((sizeof(char *) * totalText) + 2);
+    ciphertextHolder = malloc((sizeof(char *) * totalText) + 2);
 
     //encrypt
     if(totalKey < totalText) {
         error("ERROR: key must as long as input file");
     }
     for(i = 0; i < totalText; i++) {
-        int k = getDynArr(keyHolder, i);
-        int p = getDynArr(plaintextHolder, i);
+        int *k = getDynArr(keyHolder, i);
+        int *p = getDynArr(plaintextHolder, i);
 
         //add key and plaintext and take mod 26
-        k += p;
-        k = (k % 26);
+        *k += *p;
+        *k = (*k % 26);
 
-        if(k == 26) {
+        if(*k == 26) {
             ciphertextHolder[i] = ' ';
         }
         else {
-            char cipher = k + 'A';
+            char cipher = *k + 'A';
             ciphertextHolder[i] = cipher;
         }
     }
@@ -176,7 +183,7 @@ int main(int argc, char *argv[])
             //close parent's socket
             close(sockfd);
             //call function for child process
-            dostuff(newsockfd);
+            encryptFxn(newsockfd);
             exit(0);
         }
         //parent process doesn't need new socket connection

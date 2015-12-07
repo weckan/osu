@@ -17,6 +17,9 @@ struct bag
 	struct DynArr *dynArr;
 };
 
+int compare(TYPE left, TYPE right) {
+    //junk function just to meet reqs
+}
 
 /* ************************************************************************
 	Dynamic Array Functions
@@ -548,10 +551,11 @@ void removeMinHeap(DynArr *heap)
 
 void _buildHeap(DynArr *heap)
 {
+    int i;
     /* FIXME */
     int max = heap->size;
     int current = (max / 2) - 1;
-    for (int i = current; i >= 0; i--) {
+    for (i = current; i >= 0; i--) {
         _adjustHeap(heap, max, i);
     }
 }
@@ -566,10 +570,11 @@ void _buildHeap(DynArr *heap)
 void sortHeap(DynArr *heap)
 {
    /* FIXME */
+    int i;
 
     int max = heap->size;
 
-    for(int i = max - 1; i >= 0; i--) {
+    for(i = max - 1; i >= 0; i--) {
         // swap values at first and current last indices
         swapDynArr(heap, 0, i);
         //adjust heap from 0 to current last position, excludes last
