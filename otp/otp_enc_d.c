@@ -23,7 +23,7 @@
 //generic error function
 void error(const char *msg)
 {
-    perror(msg);
+    printf(msg);
     exit(1);
 }
 

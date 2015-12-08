@@ -20,7 +20,7 @@
 
 void error(const char *msg)
 {
-    perror(msg);
+    printf(msg);
     exit(EXIT_FAILURE);
 }
 
