@@ -20,7 +20,7 @@
 
 void error(const char *msg)
 {
-    printf(msg);
+    printf("%s", msg);
     exit(EXIT_FAILURE);
 }
 
@@ -51,7 +51,8 @@ void get_text(char *fileText, char *filename) {
         numRead++;
     }
     //null-terminate string
-    fileText[numRead] = '\0';
+    fileText[numRead] = '@';
+    fileText[numRead + 1] = '\0';
 
     fclose(f);
 }

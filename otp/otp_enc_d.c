@@ -23,7 +23,7 @@
 //generic error function
 void error(const char *msg)
 {
-    printf(msg);
+    printf("%s", msg);
     exit(1);
 }
 
@@ -102,6 +102,12 @@ void encryptFxn(int sock) {
             else if (inBuffer[i] == '\0') {
                 toKey = 0;
                 break;
+            }
+            else if (inBuffer[i] == '@') {
+                close(sock);
+                error("Only otp_enc may call this utility");
+            }
+            else if (inBuffer[i] == '!') {
             }
             else {
                 //convert to int by subtracting 'A' to make A = 0
