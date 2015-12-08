@@ -78,6 +78,10 @@ int main(int argc, char *argv[])
     char *fileText = malloc(sizeof(char*) * 70000);
     get_text(fileText, argv[1]);
 
+    if (strlen(keyText) < strlen(fileText)) {
+        error("Key too short");
+    }
+
     //set up socket
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
@@ -106,6 +110,7 @@ int main(int argc, char *argv[])
     n = write(sockfd,fileText,strlen(fileText));
         if (n < 0)
              error("ERROR writing to socket");
+    memset(buffer, '\0', 256);
     while(n = read(sockfd,buffer,255) > 0) {
         if (n < 0)
             error("ERROR reading from socket");
@@ -113,6 +118,7 @@ int main(int argc, char *argv[])
         printf("%s", buffer);
         bzero(buffer,256);
     }
+    printf("\n");
     close(sockfd);
     return 0;
 }

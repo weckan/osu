@@ -106,13 +106,14 @@ int main(int argc, char *argv[])
     n = write(sockfd,fileText,strlen(fileText));
         if (n < 0)
              error("ERROR writing to socket");
+    memset(buffer, '\0', 256);
     while(n = read(sockfd,buffer,255) > 0) {
         if (n < 0)
             error("ERROR reading from socket");
-        buffer[256] = '\0';
         printf("%s", buffer);
         bzero(buffer,256);
     }
+    printf("\n");
     close(sockfd);
     return 0;
 }

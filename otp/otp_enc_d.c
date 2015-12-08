@@ -69,6 +69,7 @@ void encryptFxn(int sock) {
                 toKey = 0;
                 break;
             }
+
             else {
                 //convert to int by subtracting 'A' to make A = 0
                 //if(strcmp(inBuffer[i], " ") == 0) {
@@ -98,6 +99,10 @@ void encryptFxn(int sock) {
                 toKey = 1;
                 break;
             }
+            else if (inBuffer[i] == '\0') {
+                toKey = 0;
+                break;
+            }
             else {
                 //convert to int by subtracting 'A' to make A = 0
                 //if(strcmp(inBuffer[i], " ") == 0) {
@@ -125,7 +130,7 @@ void encryptFxn(int sock) {
 
         //add key and plaintext and take mod 26
         k += p;
-        k = (k % 26);
+        k = (k % 27);
 
         if(k == 26) {
             ciphertextHolder[i] = ' ';

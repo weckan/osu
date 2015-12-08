@@ -125,7 +125,12 @@ void decryptFxn(int sock) {
 
         //subtract key and plaintext and take mod 26
         c -= k;
-        c = (c % 26);
+        if(c < 0) {
+            c = (c + 27);
+        }
+        else {
+            c = (c % 27);
+        }
 
         if(c == 26) {
             plaintextHolder[i] = ' ';
@@ -136,8 +141,8 @@ void decryptFxn(int sock) {
         }
     }
     //terminate string with newline and null char
-    plaintextHolder[totalText] = '\n';
-    plaintextHolder[totalText + 1] = '\0';
+    //plaintextHolder[totalText] = '\n';
+    //plaintextHolder[totalText + 1] = '\0';
 
 
     numWrite = write(sock, plaintextHolder,strlen(plaintextHolder));
